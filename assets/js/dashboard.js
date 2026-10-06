@@ -76,17 +76,8 @@ function actualizarInfoDia() {
 
 async function cargarAsignaturas() {
   try {
-    const facultad = obtenerFacultadUsuario();
-    if (!facultad) {
-      throw new Error("El usuario no tiene una facultad asignada.");
-    }
-
-    // La facultad del monitor define el universo de asignaturas disponibles.
-    const filtro = `${COL.facultad} eq '${escaparFiltroOData(facultad)}'`;
-    const items = await API.obtenerElementos(LISTAS.asignaturas, filtro);
-    STATE.asignaturas = items
-      .map(normalizarAsignatura)
-      .filter(a => normalizarTexto(a[COL.facultad]) === normalizarTexto(facultad));
+    const filtro = `${COL.emailMonitor} eq '${STATE.usuario.correo}'`;
+    STATE.asignaturas = await API.obtenerElementos(LISTAS.asignaturas, filtro);
 
     const mapa = {};
     STATE.asignaturas.forEach(a => {
@@ -106,41 +97,6 @@ async function cargarAsignaturas() {
         </div>
       </div>`;
   }
-}
-
-function obtenerFacultadUsuario() {
-  return STATE.usuario.facultad ||
-    STATE.usuario.FACULTAD ||
-    STATE.usuario.faculty ||
-    "";
-}
-
-function escaparFiltroOData(valor) {
-  return String(valor).replace(/'/g, "''");
-}
-
-function normalizarTexto(valor) {
-  return String(valor || "").trim().toLocaleLowerCase();
-}
-
-function normalizarAsignatura(item) {
-  const valor = (...nombres) => {
-    for (const nombre of nombres) {
-      if (item[nombre] !== undefined && item[nombre] !== null) return item[nombre];
-    }
-    return "";
-  };
-
-  return {
-    ...item,
-    [COL.facultad]: valor(COL.facultad, "facultad"),
-    [COL.carrera]: valor(COL.carrera, "carrera"),
-    [COL.asignatura]: valor(COL.asignatura, "asignatura"),
-    [COL.seccion]: valor(COL.seccion, "seccion", "SECCION", "Sección"),
-    [COL.docente]: valor(COL.docente, "docente"),
-    [COL.emailDocente]: valor(COL.emailDocente, "emailDocente", "correo"),
-    [COL.emailMonitor]: valor(COL.emailMonitor, "emailMonitor")
-  };
 }
 
 function goToStep(n) {
@@ -185,7 +141,6 @@ function renderCarreras() {
       </div>`;
     col.querySelector(".select-card").onclick = () => {
       STATE.carrera = c;
-      STATE.asignatura = null;
       renderAsignaturas();
       goToStep(2);
     };
